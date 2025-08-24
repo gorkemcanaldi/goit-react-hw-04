@@ -4,7 +4,7 @@ const LoadMoreBtn = ({ onClick, disabled }) => {
   return (
     <div className={styles.wrapper}>
       <button className={styles.button} onClick={onClick} disabled={disabled}>
-        Daha Fazla Yükle
+        Load More
       </button>
     </div>
   );

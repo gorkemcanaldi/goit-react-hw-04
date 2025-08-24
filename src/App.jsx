@@ -1,91 +1,70 @@
-import React, { useEffect, useState } from 'react'
-import { fetchImages } from "./api/image-api.js";
+import { useState } from "react";
+import SearchBar from "./components/SearchBar/SearchBar";
+import ImageGallery from "./components/ImageGallery/ImageGallery";
+import Loader from "./components/Loader/Loader";
+import LoadMoreBtn from "./components/LoadMoreBtn/LoadMoreBtn";
+import ImageModal from "./components/ImageModal/ImageModal";
+import ErrorMessage from "./components/ErrorMessage/ErrorMessage";
+import { fetchImages } from "./api/image-api";
 
-import SearchBar from "./components/SearchBar/SearchBar.jsx";
-import ImageGallery from "./components/ImageGallery/ImageGallery.jsx";
-import ImageModal from "./components/ImageModal/ImageModal.jsx";
-import Loader from "./components/Loader/Loader.jsx";
-import LoadMoreBtn from "./components/LoadMoreBtn/LoadMoreBtn.jsx";
-import ErrorMessage from "./components/ErrorMessage/ErrorMessage.jsx";
+function App() {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState("");
 
-const App = () => {
+  const handleSearch = async (searchQuery) => {
+    setQuery(searchQuery);
+    setLoading(true);
+    setError("");
+    setPage(1);
 
-    const [images, setImages] = useState([]);
-    const [query, setQuery] = useState("");
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [retryTick, setRetryTick] = useState(0);
+    try {
+      const data = await fetchImages(searchQuery, 1);
+      if (data.results.length === 0) {
+        setError("No results found.");
+      }
+      setImages(data.results);
+    } catch (err) {
+      setError("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        if(!query) return;
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
+    setLoading(true);
+    try {
+      const data = await fetchImages(query, nextPage);
+      setImages((prev) => [...prev, ...data.results]);
+      setPage(nextPage);
+    } catch (err) {
+      setError("Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        const loadImages = async () => {
-            try {
-                setLoading(true);
-                setError("");
-                const data = await fetchImages(query, page);
-                const hits = data.results || [];
-                setTotalPages(data.total_pages || 0);
-
-                setImages(prev => (page === 1 ? hits : [...prev, ...hits]));
-            } catch {
-                setError("Görseller alınamadı.");
-                if(page === 1) setImages([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadImages();
-    }, [query, page, retryTick]);
-
-
-    const handleSearch = q => {
-        if(!q) return;
-        setQuery(q);
-        setPage(1);
-        setImages([]);
-    };
-
-    const handleLoadMore = () => setPage(prev => prev + 1);
-
-    const handleImageClick = image => {
-        setSelectedImage(image);
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setSelectedImage(null);
-    };
-
-    const canLoadMore = images.length > 0 && page < totalPages && !loading;
-
+  const handleImageClick = (image) => setSelectedImage(image);
+  const handleCloseModal = () => setSelectedImage(null);
 
   return (
-<>
-    <SearchBar onSubmit={handleSearch} />
-    <div style={{ padding: 16 }}> {loading && <Loader />}
-    {error && (
-        <ErrorMessage message={error} onRetry={() => {
-            setError("");
-            setImages([]);
-            setRetryTick(t => t + 1);
-        }}
-         />
-    )}
-
-    {images.length === 0 && !loading && !error && <p>Sonuç bulunamadı.</p>}
-    <ImageGallery images={images} onImageClick={handleImageClick} />
-    {canLoadMore && <LoadMoreBtn onClick={handleLoadMore} disabled={loading} /> }
-     </div>
-
-     <ImageModal isOpen={isModalOpen} onClose={closeModal} image={selectedImage} />
-</>
-)
+    <div>
+      <SearchBar onSubmit={handleSearch} />
+      {loading && <Loader />}
+      {error && <ErrorMessage message={error} />}
+      {images.length > 0 && (
+        <>
+          <ImageGallery images={images} onImageClick={handleImageClick} />
+          <LoadMoreBtn onClick={handleLoadMore} disabled={loading} />
+        </>
+      )}
+      <ImageModal isOpen={!!selectedImage} onClose={handleCloseModal} image={selectedImage} />
+    </div>
+  );
 }
 
-export default App
+export default App;
