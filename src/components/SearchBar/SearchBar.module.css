@@ -1,0 +1,4 @@
+.header { padding: 16px; text-align: center; }
+.form { display: flex; justify-content: center; gap: 8px; }
+.input { padding: 8px; width: 300px; }
+.button { padding: 8px 16px; cursor: pointer; }

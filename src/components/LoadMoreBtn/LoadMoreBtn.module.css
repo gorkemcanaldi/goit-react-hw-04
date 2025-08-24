@@ -1,0 +1,7 @@
+.wrapper { text-align: center; margin: 16px 0; }
+.button {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
